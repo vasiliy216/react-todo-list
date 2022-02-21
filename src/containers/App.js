@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import Api from '../utils/api'
+import socket from '../core/socket'
 import App from '../App'
 
 const AppContainer = () => {
@@ -21,11 +22,10 @@ const AppContainer = () => {
         Api
             .create({ text: text })
             .then((item) => {
-
-                const { data } = item;
-
+                const newData = { type: "CREATE", payload: item.data };
+                socket.emit("SERVER:ITEM_UPDATE", newData)
+                UpdateTodoList(newData);
                 setText('')
-                setItems(prevData => ([ ...prevData, data ]))
             })
             .catch()
     }
@@ -34,11 +34,9 @@ const AppContainer = () => {
         Api
             .update(id)
             .then(() => {
-                const newItem = items.map(item => {
-                    if (item._id === id) item.read = !item.read;
-                    return item
-                })
-                setItems(newItem)
+                const newData = { type: "UPDATE", payload: id };
+                socket.emit("SERVER:ITEM_UPDATE", newData)
+                UpdateTodoList(newData);
             })
             .catch(err => {
                 console.log(err)
@@ -49,26 +47,55 @@ const AppContainer = () => {
         Api
             .delete(id)
             .then(() => {
-                const newItem = items.filter(item => item._id !== id)
-                setItems(newItem)
+                const newData = { type: "DELETE", payload: id };
+                socket.emit("SERVER:ITEM_UPDATE", newData)
+                UpdateTodoList(newData);
             })
             .catch(err => {
                 console.log(err)
             })
     }
 
+    const UpdateTodoList = ({ type, payload }) => {
+        switch (type) {
+            case "UPDATE":
+                setItems(prevData => {
+                    return prevData.map(item => {
+                        if (item._id === payload) {
+                            return {
+                                ...item,
+                                read: !item.read
+                            }
+                        }
+                        return item;
+                    })
+                }); break;
+            case "CREATE": setItems(prevData => ([...prevData, payload])); break;
+            case "DELETE":
+                setItems(prevData => {
+                    return prevData.filter(item => item._id !== payload)
+                }); break;
+            default: return null;
+        }
+    }
+
     useEffect(() => {
         Api
             .findAll()
             .then(items => {
-
                 const { data } = items;
-
                 setItems(data)
             })
             .catch(err => {
                 console.log(err)
             })
+
+        socket.on("SERVER:ITEM_UPDATE", UpdateTodoList)
+
+        return () => {
+            socket.removeListener("SERVER:ITEM_UPDATE")
+        }
+
     }, [])
 
     return (
