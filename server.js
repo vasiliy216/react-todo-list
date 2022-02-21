@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3003;
 app.use(express.static("./build"));
 
 app.use("*", (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+    res.sendFile(path.join('build', 'index.html'));
 });
 
 
