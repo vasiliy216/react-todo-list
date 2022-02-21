@@ -1,7 +1,7 @@
-import express from 'express'
-import dotenv from 'dotenv'
-import path from 'path'
-import { createServer } from 'http'
+const express = require('express')
+const dotenv = require('dotenv')
+const path = require('path')
+const { createServer } = require('http')
 
 dotenv.config()
 
